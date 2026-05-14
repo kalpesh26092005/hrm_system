@@ -1,0 +1,299 @@
+<!-- frontend/templates/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VIBGYOR HRM System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #4e73df;
+            --secondary-color: #858796;
+            --success-color: #1cc88a;
+            --info-color: #36b9cc;
+            --warning-color: #f6c23e;
+            --danger-color: #e74a3b;
+        }
+        
+        body {
+            font-family: 'Nunito', 'Segoe UI', sans-serif;
+            background-color: #f8f9fc;
+        }
+        
+        .sidebar {
+            min-height: 100vh;
+            background: linear-gradient(180deg, #4e73df 0%, #224abe 100%);
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+        }
+        
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            padding: 1rem;
+            transition: all 0.3s;
+        }
+        
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            color: white;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        .sidebar .nav-link i {
+            margin-right: 0.75rem;
+        }
+        
+        .topbar {
+            background-color: white;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+            padding: 1rem 2rem;
+        }
+        
+        .stats-card {
+            border: none;
+            border-radius: 0.5rem;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.1);
+            transition: transform 0.3s;
+        }
+        
+        .stats-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .stats-card .card-body {
+            padding: 1.5rem;
+        }
+        
+        .stats-icon {
+            font-size: 2.5rem;
+            opacity: 0.3;
+        }
+        
+        .content-wrapper {
+            padding: 2rem;
+        }
+        
+        .btn-gradient {
+            background: linear-gradient(180deg, #4e73df 0%, #224abe 100%);
+            border: none;
+            color: white;
+        }
+        
+        .btn-gradient:hover {
+            background: linear-gradient(180deg, #224abe 0%, #4e73df 100%);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid p-0">
+        <div class="row g-0">
+            <!-- Sidebar -->
+            <div class="col-auto sidebar">
+                <div class="p-4 text-center">
+                    <h4 class="text-white mb-0">VIBGYOR HRM</h4>
+                    <small class="text-white-50">Integrated Internship</small>
+                </div>
+                <nav class="nav flex-column">
+                    <a class="nav-link active" href="/">
+                        <i class="bi bi-speedometer2"></i> Dashboard
+                    </a>
+                    <a class="nav-link" href="/department-management/">
+                        <i class="bi bi-building"></i> Departments
+                    </a>
+                    <a class="nav-link" href="#">
+                        <i class="bi bi-people"></i> Employees
+                    </a>
+                    <a class="nav-link" href="#">
+                        <i class="bi bi-check2-square"></i> Tasks
+                    </a>
+                    <a class="nav-link" href="#">
+                        <i class="bi bi-calendar-check"></i> Leaves
+                    </a>
+                    <a class="nav-link" href="#">
+                        <i class="bi bi-graph-up"></i> Performance
+                    </a>
+                    <a class="nav-link" href="#">
+                        <i class="bi bi-gear"></i> Settings
+                    </a>
+                </nav>
+            </div>
+            
+            <!-- Main Content -->
+            <div class="col">
+                <div class="topbar d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Dashboard</h5>
+                    <div class="d-flex align-items-center">
+                        <span class="me-3"><i class="bi bi-bell"></i></span>
+                        <div class="dropdown">
+                            <a href="#" class="text-decoration-none dropdown-toggle" data-bs-toggle="dropdown">
+                                <i class="bi bi-person-circle fs-5"></i> Admin
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="#"><i class="bi bi-person"></i> Profile</a></li>
+                                <li><a class="dropdown-item" href="#"><i class="bi bi-gear"></i> Settings</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="#"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="content-wrapper">
+                    <!-- Stats Cards -->
+                    <div class="row mb-4">
+                        <div class="col-md-3 mb-3">
+                            <div class="card stats-card">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <h6 class="text-muted mb-1">Total Departments</h6>
+                                            <h3 class="mb-0" id="totalDepartments">0</h3>
+                                        </div>
+                                        <div class="stats-icon">
+                                            <i class="bi bi-building"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="card stats-card">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <h6 class="text-muted mb-1">Total Employees</h6>
+                                            <h3 class="mb-0" id="totalEmployees">0</h3>
+                                        </div>
+                                        <div class="stats-icon">
+                                            <i class="bi bi-people"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="card stats-card">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <h6 class="text-muted mb-1">Pending Tasks</h6>
+                                            <h3 class="mb-0" id="pendingTasks">0</h3>
+                                        </div>
+                                        <div class="stats-icon">
+                                            <i class="bi bi-clock-history"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="card stats-card">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <h6 class="text-muted mb-1">Leave Requests</h6>
+                                            <h3 class="mb-0" id="leaveRequests">0</h3>
+                                        </div>
+                                        <div class="stats-icon">
+                                            <i class="bi bi-calendar-week"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Recent Activities -->
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="card">
+                                <div class="card-header bg-white">
+                                    <h6 class="mb-0">Recent Departments</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-hover" id="recentDepartmentsTable">
+                                            <thead>
+                                                <tr>
+                                                    <th>Department Name</th>
+                                                    <th>Description</th>
+                                                    <th>Created At</th>
+                                                    <th>Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="recentDepartmentsBody">
+                                                <tr>
+                                                    <td colspan="4" class="text-center">Loading...</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-header bg-white">
+                                    <h6 class="mb-0">Quick Actions</h6>
+                                </div>
+                                <div class="card-body">
+                                    <a href="/department-management/" class="btn btn-gradient w-100 mb-2">
+                                        <i class="bi bi-plus-circle"></i> Add Department
+                                    </a>
+                                    <button class="btn btn-outline-primary w-100 mb-2">
+                                        <i class="bi bi-person-plus"></i> Add Employee
+                                    </button>
+                                    <button class="btn btn-outline-success w-100">
+                                        <i class="bi bi-file-text"></i> Generate Report
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const API_BASE = '/api';
+        
+        // Load dashboard data
+        async function loadDashboardData() {
+            try {
+                const deptResponse = await fetch(`${API_BASE}/departments/`);
+                const departments = await deptResponse.json();
+                document.getElementById('totalDepartments').textContent = departments.length;
+                
+                // Show recent departments (last 5)
+                const recentDepts = departments.slice(0, 5);
+                const tbody = document.getElementById('recentDepartmentsBody');
+                if (recentDepts.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="text-center">No departments found</td></tr>';
+                } else {
+                    tbody.innerHTML = recentDepts.map(dept => `
+                        <tr>
+                            <td>${dept.dept_name}</td>
+                            <td>${dept.description || '-'}</td>
+                            <td>${new Date(dept.created_at).toLocaleDateString()}</td>
+                            <td><span class="badge bg-success">Active</span></td>
+                        </tr>
+                    `).join('');
+                }
+                
+                // Load other stats (simplified for now)
+                document.getElementById('totalEmployees').textContent = '0';
+                document.getElementById('pendingTasks').textContent = '0';
+                document.getElementById('leaveRequests').textContent = '0';
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+            }
+        }
+        
+        loadDashboardData();
+    </script>
+</body>
+</html>
