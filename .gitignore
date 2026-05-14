@@ -1,7 +1,12 @@
-echo venv/ >> .gitignore
-echo __pycache__/ >> .gitignore
-echo *.pyc >> .gitignore
-echo *.sqlite3 >> .gitignore
-echo staticfiles/ >> .gitignore
-echo media/ >> .gitignore
-echo .env >> .gitignore
+# Python  
+__pycache__/  
+*.pyc  
+venv/  
+env/  
+db.sqlite3  
+.env  
+.vscode/  
+staticfiles/  
+media/  
+*.log  
+Thumbs.db 
