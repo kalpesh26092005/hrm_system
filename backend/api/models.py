@@ -8,7 +8,7 @@ class Department(models.Model):
     description = models.CharField(max_length=300, blank=True, null=True, verbose_name="Description")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Created At")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="Updated At")
-    status = models.BooleanField(default=True, verbose_name="Status")  # True=Active, False=Inactive
+    status = models.BooleanField(default=True, verbose_name="Status")
     
     class Meta:
         db_table = 'department'
@@ -20,8 +20,6 @@ class Department(models.Model):
         return self.dept_name
     
     def soft_delete(self):
-        """Soft delete - make department inactive"""
-        # Check if there are employees in this department
         if hasattr(self, 'employees') and self.employees.filter(is_active=True).exists():
             return False, "Department has active employees. Please reassign them first."
         self.status = False
@@ -29,41 +27,57 @@ class Department(models.Model):
         return True, "Department deactivated successfully"
     
     def activate(self):
-        """Activate department"""
         self.status = True
         self.save()
     
     @property
     def employee_count(self):
-        """Get count of active employees in this department"""
         from .models import User
         return User.objects.filter(department=self, is_active=True).count()
     
     @property
     def is_active(self):
-        """Return status as boolean"""
         return self.status
 
 
 class Role(models.Model):
-    """Role Model for User Roles"""
-    ROLE_CHOICES = [
-        ('admin', 'Admin'),
-        ('manager', 'Manager'),
-        ('team_leader', 'Team Leader'),
-        ('employee', 'Employee'),
-    ]
-    
+    """Role Model - Exactly as per database design"""
     role_id = models.AutoField(primary_key=True)
-    role_name = models.CharField(max_length=50, choices=ROLE_CHOICES, unique=True)
-    description = models.CharField(max_length=200, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+    role_name = models.CharField(max_length=100, unique=True, verbose_name="Role Name")
+    description = models.CharField(max_length=200, blank=True, verbose_name="Description")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Created At")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Updated At")
+    status = models.BooleanField(default=True, verbose_name="Status")
     
     class Meta:
-        db_table = 'role'
+        db_table = 'roles'
+        ordering = ['-created_at']
+        verbose_name = 'Role'
+        verbose_name_plural = 'Roles'
     
     def __str__(self):
         return self.role_name
+    
+    def soft_delete(self):
+        from .models import User
+        if User.objects.filter(role=self, is_active=True).exists():
+            return False, "This role is assigned to active users. Please reassign them first."
+        self.status = False
+        self.save()
+        return True, "Role deactivated successfully"
+    
+    def activate(self):
+        self.status = True
+        self.save()
+    
+    @property
+    def is_active(self):
+        return self.status
+    
+    @property
+    def user_count(self):
+        from .models import User
+        return User.objects.filter(role=self, is_active=True).count()
 
 
 class User(models.Model):

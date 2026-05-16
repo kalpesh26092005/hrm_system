@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Department, User, Task, Leave, Performance, Role
+from .models import Department, Role, User, Task, Leave, Performance
 
 class DepartmentSerializer(serializers.ModelSerializer):
     """Serializer for Department model"""
@@ -14,7 +14,6 @@ class DepartmentSerializer(serializers.ModelSerializer):
         return obj.employee_count
     
     def validate_dept_name(self, value):
-        # Check if department name already exists (excluding current department)
         request = self.context.get('request')
         if request and request.method in ['PUT', 'PATCH']:
             dept_id = self.instance.dept_id if self.instance else None
@@ -27,12 +26,33 @@ class DepartmentSerializer(serializers.ModelSerializer):
 
 
 class RoleSerializer(serializers.ModelSerializer):
+    """Serializer for Role model with user count"""
+    user_count = serializers.SerializerMethodField()
+    is_active = serializers.BooleanField(source='status', read_only=True)
+    
     class Meta:
         model = Role
-        fields = '__all__'
+        fields = ['role_id', 'role_name', 'description', 'created_at', 'updated_at', 'status', 'user_count', 'is_active']
+    
+    def get_user_count(self, obj):
+        return obj.user_count
+    
+    def validate_role_name(self, value):
+        request = self.context.get('request')
+        if request and request.method in ['PUT', 'PATCH']:
+            role_id = self.instance.role_id if self.instance else None
+            if Role.objects.filter(role_name__iexact=value).exclude(role_id=role_id).exists():
+                raise serializers.ValidationError("Role with this name already exists.")
+        else:
+            if Role.objects.filter(role_name__iexact=value).exists():
+                raise serializers.ValidationError("Role with this name already exists.")
+        return value
 
 
 class UserSerializer(serializers.ModelSerializer):
+    role_name = serializers.CharField(source='role.role_name', read_only=True)
+    department_name = serializers.CharField(source='department.dept_name', read_only=True)
+    
     class Meta:
         model = User
         fields = '__all__'
