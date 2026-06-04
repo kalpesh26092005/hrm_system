@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Management - VIBGYOR HRM</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            overflow-x: hidden;
+            background-color: #f8f9fc;
+        }
+        
+        .container-fluid {
+            padding: 0 !important;
+            width: 100%;
+        }
+        
+        .row {
+            display: flex !important;
+            margin: 0 !important;
+            width: 100%;
+        }
+        
+        .sidebar {
+            min-height: 100vh;
+            background: linear-gradient(180deg, #4e73df 0%, #224abe 100%);
+            width: 250px;
+            flex-shrink: 0;
+        }
+        
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            padding: 1rem;
+            transition: all 0.3s;
+        }
+        
+        .sidebar .nav-link:hover, .sidebar .nav-link.active {
+            color: white;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        .sidebar .nav-link i {
+            margin-right: 0.75rem;
+        }
+        
+        .main-content {
+            flex: 1;
+            min-height: 100vh;
+            background-color: #f8f9fc;
+        }
+        
+        .topbar {
+            background-color: white;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+            padding: 1rem 2rem;
+            width: 100%;
+        }
+        
+        .content-area {
+            padding: 2rem;
+        }
+        
+        .btn-gradient {
+            background: linear-gradient(180deg, #4e73df 0%, #224abe 100%);
+            border: none;
+            color: white;
+        }
+        
+        .btn-gradient:hover {
+            background: linear-gradient(180deg, #224abe 0%, #4e73df 100%);
+            color: white;
+        }
+        
+        .status-badge-active {
+            background-color: #1cc88a;
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 2rem;
+            font-size: 0.75rem;
+        }
+        
+        .status-badge-inactive {
+            background-color: #e74a3b;
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 2rem;
+            font-size: 0.75rem;
+        }
+        
+        .search-box {
+            position: relative;
+            max-width: 300px;
+        }
+        
+        .search-box input {
+            padding-right: 40px;
+        }
+        
+        .search-box button {
+            position: absolute;
+            right: 0;
+            top: 0;
+            height: 100%;
+            border-radius: 0 0.375rem 0.375rem 0;
+        }
+        
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1050;
+        }
+        
+        .form-label {
+            font-weight: 500;
+        }
+        
+        .required-field::after {
+            content: "*";
+            color: red;
+            margin-left: 4px;
+        }
+        
+        .action-buttons {
+            white-space: nowrap;
+        }
+        
+        .action-buttons .btn {
+            margin: 0 2px;
+            padding: 4px 8px;
+        }
+        
+        .table td {
+            vertical-align: middle;
+        }
+        
+        .card {
+            border: none;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.1);
+        }
+        
+        .card-header {
+            background-color: white;
+            border-bottom: 1px solid #e3e6f0;
+            padding: 1rem;
+        }
+        
+        .card-header h6 {
+            margin: 0;
+            font-weight: 600;
+            color: #4e73df;
+        }
+        
+        .btn-group .btn {
+            font-size: 0.875rem;
+        }
+        
+        .col-auto {
+            padding: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid p-0">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <div class="p-4 text-center">
+                    <h4 class="text-white mb-0">VIBGYOR HRM</h4>
+                    <small class="text-white-50">Employee Management</small>
+                </div>
+                <nav class="nav flex-column">
+                    <a class="nav-link" href="/">
+                        <i class="bi bi-speedometer2"></i> Dashboard
+                    </a>
+                    <a class="nav-link" href="/department-management/">
+                        <i class="bi bi-building"></i> Departments
+                    </a>
+                    <a class="nav-link" href="/role-management/">
+                        <i class="bi bi-person-badge"></i> Roles
+                    </a>
+                    <a class="nav-link active" href="/employee-management/">
+                        <i class="bi bi-people"></i> Employees
+                    </a>
+                    <a class="nav-link" href="#">
+                        <i class="bi bi-check2-square"></i> Tasks
+                    </a>
+                    <a class="nav-link" href="#">
+                        <i class="bi bi-calendar-check"></i> Leaves
+                    </a>
+                </nav>
+            </div>
+            
+            <!-- Main Content -->
+            <div class="main-content">
+                <div class="topbar d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Employee Management</h5>
+                    <div>
+                        <button class="btn btn-gradient" data-bs-toggle="modal" data-bs-target="#addEmployeeModal" onclick="loadFormData()">
+                            <i class="bi bi-person-plus"></i> Add Employee
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="content-area">
+                    <!-- Search and Filters -->
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <div class="search-box">
+                                <input type="text" id="searchInput" class="form-control" placeholder="Search by name, email, username...">
+                                <button class="btn btn-primary" onclick="searchEmployees()">
+                                    <i class="bi bi-search"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <select id="deptFilter" class="form-select" onchange="filterByDepartment()">
+                                <option value="">All Departments</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <select id="roleFilter" class="form-select" onchange="filterByRole()">
+                                <option value="">All Roles</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <div class="btn-group">
+                                <button class="btn btn-outline-secondary" onclick="filterByStatus('all')">All</button>
+                                <button class="btn btn-outline-success" onclick="filterByStatus('active')">Active</button>
+                                <button class="btn btn-outline-danger" onclick="filterByStatus('inactive')">Inactive</button>
+                                <button class="btn btn-outline-primary" onclick="loadEmployees()">
+                                    <i class="bi bi-arrow-repeat"></i> Refresh
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Employees Table -->
+                    <div class="card">
+                        <div class="card-header bg-white">
+                            <h6>All Employees</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Name</th>
+                                            <th>Username</th>
+                                            <th>Email</th>
+                                            <th>Mobile</th>
+                                            <th>Department</th>
+                                            <th>Role</th>
+                                            <th>Reporting Manager</th>
+                                            <th>Joining Date</th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="employeesTableBody">
+                                        <tr><td colspan="11" class="text-center">Loading employees...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modals - Same as before -->
+    <div class="modal fade" id="addEmployeeModal" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="employeeModalTitle">Add New Employee</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="employeeForm">
+                        <input type="hidden" id="employeeId">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label required-field">First Name</label>
+                                <input type="text" class="form-control" id="firstName" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label required-field">Last Name</label>
+                                <input type="text" class="form-control" id="lastName" required>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label required-field">Username</label>
+                                <input type="text" class="form-control" id="username" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label required-field" id="passwordLabel">Password</label>
+                                <input type="password" class="form-control" id="password" required>
+                                <small class="text-muted" id="passwordHint"></small>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label required-field">Email</label>
+                                <input type="email" class="form-control" id="email" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label required-field">Mobile</label>
+                                <input type="text" class="form-control" id="mobile" required>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label required-field">Department</label>
+                                <select class="form-select" id="deptId" required>
+                                    <option value="">Select Department</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label required-field">Role</label>
+                                <select class="form-select" id="roleId" required>
+                                    <option value="">Select Role</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Reporting Manager</label>
+                                <select class="form-select" id="reportingManagerId">
+                                    <option value="">None</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label required-field">Date of Joining</label>
+                                <input type="date" class="form-control" id="dateOfJoining" required>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveEmployee()">Save Employee</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal fade" id="deleteConfirmModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title"><i class="bi bi-exclamation-triangle"></i> Confirm Deactivation</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to deactivate this employee?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Deactivate</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="toast-container"></div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const API_BASE = '/api';
+        let currentStatusFilter = 'all';
+        let currentSearchTerm = '';
+        let currentDeptFilter = '';
+        let currentRoleFilter = '';
+        let employeeToDelete = null;
+        
+        function showToast(message, type = 'success') {
+            const toastContainer = document.querySelector('.toast-container');
+            const toastId = 'toast-' + Date.now();
+            const bgColor = type === 'success' ? 'bg-success' : (type === 'error' ? 'bg-danger' : 'bg-warning');
+            
+            const toastHtml = `
+                <div id="${toastId}" class="toast align-items-center text-white ${bgColor} border-0 mb-2" role="alert" data-bs-autohide="true" data-bs-delay="3000">
+                    <div class="d-flex">
+                        <div class="toast-body">${message}</div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                    </div>
+                </div>
+            `;
+            
+            toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+            const toastElement = document.getElementById(toastId);
+            if (toastElement) {
+                const toast = new bootstrap.Toast(toastElement);
+                toast.show();
+                toastElement.addEventListener('hidden.bs.toast', () => toastElement.remove());
+            }
+        }
+        
+        async function loadFormData() {
+            try {
+                const deptRes = await fetch(`${API_BASE}/departments/`);
+                const departments = await deptRes.json();
+                const deptSelect = document.getElementById('deptId');
+                deptSelect.innerHTML = '<option value="">Select Department</option>';
+                departments.forEach(dept => {
+                    deptSelect.innerHTML += `<option value="${dept.dept_id}">${dept.dept_name}</option>`;
+                });
+                
+                const roleRes = await fetch(`${API_BASE}/roles/`);
+                const roles = await roleRes.json();
+                const roleSelect = document.getElementById('roleId');
+                roleSelect.innerHTML = '<option value="">Select Role</option>';
+                roles.forEach(role => {
+                    roleSelect.innerHTML += `<option value="${role.role_id}">${role.role_name}</option>`;
+                });
+                
+                const managerRes = await fetch(`${API_BASE}/users/reporting_managers/`);
+                const managers = await managerRes.json();
+                const managerSelect = document.getElementById('reportingManagerId');
+                managerSelect.innerHTML = '<option value="">None</option>';
+                managers.forEach(manager => {
+                    managerSelect.innerHTML += `<option value="${manager.employee_id}">${manager.first_name} ${manager.last_name}</option>`;
+                });
+            } catch (error) {
+                console.error('Error loading form data:', error);
+            }
+        }
+        
+        async function loadEmployees() {
+            try {
+                let url = `${API_BASE}/users/`;
+                const params = new URLSearchParams();
+                if (currentSearchTerm) params.append('search', currentSearchTerm);
+                if (currentDeptFilter) params.append('dept_id', currentDeptFilter);
+                if (currentRoleFilter) params.append('role_id', currentRoleFilter);
+                if (currentStatusFilter !== 'all') params.append('status', currentStatusFilter);
+                if (params.toString()) url += '?' + params.toString();
+                
+                const response = await fetch(url);
+                const employees = await response.json();
+                
+                const tbody = document.getElementById('employeesTableBody');
+                if (employees.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="11" class="text-center">No employees found</td></tr>';
+                } else {
+                    tbody.innerHTML = employees.map(emp => `
+                        <tr>
+                            <td>${emp.employee_id}</td>
+                            <td><strong>${escapeHtml(emp.first_name)} ${escapeHtml(emp.last_name)}</strong></td>
+                            <td>${escapeHtml(emp.username)}</td>
+                            <td>${escapeHtml(emp.email)}</td>
+                            <td>${escapeHtml(emp.mobile)}</td>
+                            <td>${emp.department_name || '-'}</td>
+                            <td>${emp.role_name || '-'}</td>
+                            <td>${emp.reporting_manager || '-'}</td>
+                            <td>${emp.date_of_joining || '-'}</td>
+                            <td>${emp.is_active ? '<span class="status-badge-active">Active</span>' : '<span class="status-badge-inactive">Inactive</span>'}</td>
+                            <td class="action-buttons">
+                                <button class="btn btn-sm btn-warning" onclick="openEditModal(${emp.employee_id})" title="Edit">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-sm btn-danger" onclick="confirmDelete(${emp.employee_id})" title="Delete">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+                
+                await loadFilterOptions();
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('Error loading employees', 'error');
+            }
+        }
+        
+        async function loadFilterOptions() {
+            try {
+                const deptRes = await fetch(`${API_BASE}/departments/`);
+                const departments = await deptRes.json();
+                const deptFilter = document.getElementById('deptFilter');
+                deptFilter.innerHTML = '<option value="">All Departments</option>';
+                departments.forEach(dept => {
+                    deptFilter.innerHTML += `<option value="${dept.dept_id}">${dept.dept_name}</option>`;
+                });
+                
+                const roleRes = await fetch(`${API_BASE}/roles/`);
+                const roles = await roleRes.json();
+                const roleFilter = document.getElementById('roleFilter');
+                roleFilter.innerHTML = '<option value="">All Roles</option>';
+                roles.forEach(role => {
+                    roleFilter.innerHTML += `<option value="${role.role_id}">${role.role_name}</option>`;
+                });
+            } catch (error) {
+                console.error('Error loading filters:', error);
+            }
+        }
+        
+        async function saveEmployee() {
+            const id = document.getElementById('employeeId').value;
+            const data = {
+                first_name: document.getElementById('firstName').value.trim(),
+                last_name: document.getElementById('lastName').value.trim(),
+                username: document.getElementById('username').value.trim(),
+                email: document.getElementById('email').value.trim(),
+                mobile: document.getElementById('mobile').value.trim(),
+                dept_id: parseInt(document.getElementById('deptId').value),
+                role_id: parseInt(document.getElementById('roleId').value),
+                date_of_joining: document.getElementById('dateOfJoining').value,
+                is_active: true
+            };
+            
+            const reportingManagerId = document.getElementById('reportingManagerId').value;
+            if (reportingManagerId) data.reporting_manager_id = parseInt(reportingManagerId);
+            
+            const password = document.getElementById('password').value;
+            if (password) data.password = password;
+            else if (!id) {
+                showToast('Password is required', 'error');
+                return;
+            }
+            
+            if (!data.first_name || !data.last_name || !data.username || !data.email || !data.mobile || !data.dept_id || !data.role_id || !data.date_of_joining) {
+                showToast('Please fill all required fields', 'error');
+                return;
+            }
+            
+            try {
+                let url = `${API_BASE}/users/`;
+                let method = 'POST';
+                if (id) {
+                    url += `${id}/`;
+                    method = 'PUT';
+                }
+                
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    showToast(result.message);
+                    bootstrap.Modal.getInstance(document.getElementById('addEmployeeModal')).hide();
+                    resetForm();
+                    loadEmployees();
+                    setTimeout(() => { window.location.href = '/'; }, 1500);
+                } else {
+                    const errorMsg = result.errors || result.message || 'Error saving employee';
+                    showToast(typeof errorMsg === 'object' ? JSON.stringify(errorMsg) : errorMsg, 'error');
+                }
+            } catch (error) {
+                showToast('Error saving employee', 'error');
+            }
+        }
+        
+        async function openEditModal(id) {
+            try {
+                const response = await fetch(`${API_BASE}/users/${id}/`);
+                const emp = await response.json();
+                
+                document.getElementById('employeeModalTitle').textContent = 'Edit Employee';
+                document.getElementById('employeeId').value = emp.employee_id;
+                document.getElementById('firstName').value = emp.first_name;
+                document.getElementById('lastName').value = emp.last_name;
+                document.getElementById('username').value = emp.username;
+                document.getElementById('email').value = emp.email;
+                document.getElementById('mobile').value = emp.mobile;
+                document.getElementById('deptId').value = emp.dept_id || '';
+                document.getElementById('roleId').value = emp.role_id || '';
+                document.getElementById('reportingManagerId').value = emp.reporting_manager_id || '';
+                document.getElementById('dateOfJoining').value = emp.date_of_joining;
+                document.getElementById('passwordLabel').innerHTML = 'New Password <span class="text-muted">(optional)</span>';
+                document.getElementById('password').required = false;
+                document.getElementById('passwordHint').innerHTML = 'Leave blank to keep current password';
+                document.getElementById('password').value = '';
+                
+                await loadFormData();
+                new bootstrap.Modal(document.getElementById('addEmployeeModal')).show();
+            } catch (error) {
+                showToast('Error loading employee details', 'error');
+            }
+        }
+        
+        function resetForm() {
+            document.getElementById('employeeForm').reset();
+            document.getElementById('employeeId').value = '';
+            document.getElementById('employeeModalTitle').textContent = 'Add New Employee';
+            document.getElementById('passwordLabel').innerHTML = 'Password';
+            document.getElementById('password').required = true;
+            document.getElementById('passwordHint').innerHTML = '';
+        }
+        
+        function confirmDelete(id) {
+            employeeToDelete = id;
+            new bootstrap.Modal(document.getElementById('deleteConfirmModal')).show();
+        }
+        
+        async function deleteEmployee() {
+            if (!employeeToDelete) return;
+            
+            try {
+                const response = await fetch(`${API_BASE}/users/${employeeToDelete}/`, {
+                    method: 'DELETE'
+                });
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    showToast(result.message);
+                    bootstrap.Modal.getInstance(document.getElementById('deleteConfirmModal')).hide();
+                    loadEmployees();
+                } else {
+                    showToast(result.message || 'Error deactivating employee', 'error');
+                }
+            } catch (error) {
+                showToast('Error deactivating employee', 'error');
+            }
+        }
+        
+        function searchEmployees() {
+            currentSearchTerm = document.getElementById('searchInput').value;
+            loadEmployees();
+        }
+        
+        function filterByDepartment() {
+            currentDeptFilter = document.getElementById('deptFilter').value;
+            loadEmployees();
+        }
+        
+        function filterByRole() {
+            currentRoleFilter = document.getElementById('roleFilter').value;
+            loadEmployees();
+        }
+        
+        function filterByStatus(status) {
+            currentStatusFilter = status;
+            loadEmployees();
+        }
+        
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        document.getElementById('confirmDeleteBtn').addEventListener('click', deleteEmployee);
+        document.getElementById('searchInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') searchEmployees();
+        });
+        
+        loadEmployees();
+    </script>
+</body>
+</html>

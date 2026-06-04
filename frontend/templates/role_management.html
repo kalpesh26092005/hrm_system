@@ -92,7 +92,7 @@
                     <a class="nav-link active" href="/role-management/">
                         <i class="bi bi-person-badge"></i> Roles
                     </a>
-                    <a class="nav-link" href="#">
+                    <a class="nav-link" href="/employee-management/">
                         <i class="bi bi-people"></i> Employees
                     </a>
                     <a class="nav-link" href="#">
@@ -291,7 +291,7 @@
                     params.append('search', currentSearchTerm);
                 }
                 if (currentFilter !== 'all') {
-                    params.append('status', currentFilter === 'active' ? 'true' : 'false');
+                    params.append('status', currentFilter === 'active' ? 'active' : 'inactive');
                 }
                 
                 if (params.toString()) {
@@ -299,6 +299,11 @@
                 }
                 
                 const response = await fetch(url);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
                 const roles = await response.json();
                 
                 const tbody = document.getElementById('rolesTableBody');
@@ -330,47 +335,74 @@
                 }
             } catch (error) {
                 console.error('Error:', error);
-                showToast('Error loading roles', 'error');
+                showToast('Error loading roles: ' + error.message, 'error');
             }
         }
         
         async function addRole() {
-            const name = document.getElementById('roleName').value.trim();
-            const description = document.getElementById('roleDescription').value.trim();
-            
-            if (!name) {
-                showToast('Please enter role name', 'error');
-                return;
-            }
-            
-            try {
-                const response = await fetch(`${API_BASE}/roles/`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ role_name: name, description: description })
-                });
-                
-                const result = await response.json();
-                
-                if (response.ok && result.success) {
-                    showToast(result.message || 'Role created successfully!');
-                    document.getElementById('addRoleForm').reset();
-                    bootstrap.Modal.getInstance(document.getElementById('addRoleModal')).hide();
-                    loadRoles();
-                    setTimeout(() => {
-                        window.location.href = '/';
-                    }, 1500);
-                } else {
-                    showToast(result.message || result.error || 'Error creating role', 'error');
-                }
-            } catch (error) {
-                showToast('Error creating role', 'error');
-            }
+    const name = document.getElementById('roleName').value.trim();
+    const description = document.getElementById('roleDescription').value.trim();
+    
+    if (!name) {
+        showToast('Please enter role name', 'error');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${API_BASE}/roles/`, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ 
+                role_name: name, 
+                description: description,
+                status: true  // Add status explicitly
+            })
+        });
+        
+        // Check if response is ok
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Server response:', errorText);
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
+        
+        const result = await response.json();
+        
+        // Check if we got a success response
+        if (response.ok && (result.success === true || result.role_id)) {
+            showToast('Role created successfully!');
+            document.getElementById('addRoleForm').reset();
+            const modal = bootstrap.Modal.getInstance(document.getElementById('addRoleModal'));
+            if (modal) modal.hide();
+            loadRoles();
+            setTimeout(() => {
+                window.location.href = '/';
+            }, 1500);
+        } else {
+            // Handle validation errors
+            let errorMsg = 'Error creating role';
+            if (result.message) errorMsg = result.message;
+            if (result.error) errorMsg = result.error;
+            if (result.role_name) errorMsg = result.role_name.join(', ');
+            showToast(errorMsg, 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('Error creating role: ' + error.message, 'error');
+    }
+}
         
         async function openEditModal(id) {
             try {
                 const response = await fetch(`${API_BASE}/roles/${id}/`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
                 const role = await response.json();
                 
                 document.getElementById('editRoleId').value = role.role_id;
@@ -379,7 +411,7 @@
                 
                 new bootstrap.Modal(document.getElementById('editRoleModal')).show();
             } catch (error) {
-                showToast('Error loading role details', 'error');
+                showToast('Error loading role details: ' + error.message, 'error');
             }
         }
         
@@ -396,7 +428,10 @@
             try {
                 const response = await fetch(`${API_BASE}/roles/${id}/`, {
                     method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
                     body: JSON.stringify({ role_name: name, description: description })
                 });
                 
@@ -404,16 +439,18 @@
                 
                 if (response.ok && result.success) {
                     showToast(result.message || 'Role updated successfully!');
-                    bootstrap.Modal.getInstance(document.getElementById('editRoleModal')).hide();
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('editRoleModal'));
+                    if (modal) modal.hide();
                     loadRoles();
                     setTimeout(() => {
                         window.location.href = '/';
                     }, 1500);
                 } else {
-                    showToast(result.message || 'Error updating role', 'error');
+                    const errorMsg = result.message || 'Error updating role';
+                    showToast(typeof errorMsg === 'object' ? JSON.stringify(errorMsg) : errorMsg, 'error');
                 }
             } catch (error) {
-                showToast('Error updating role', 'error');
+                showToast('Error updating role: ' + error.message, 'error');
             }
         }
         
@@ -422,24 +459,30 @@
             
             try {
                 const response = await fetch(`${API_BASE}/roles/${id}/check_users/`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
                 const data = await response.json();
                 
                 const userWarning = document.getElementById('userWarning');
                 const userCountSpan = document.getElementById('userCount');
+                const confirmBtn = document.getElementById('confirmDeleteBtn');
                 
                 if (data.user_count > 0) {
                     userWarning.style.display = 'block';
                     userCountSpan.innerHTML = `<strong>Warning:</strong> This role is assigned to ${data.user_count} active user(s). 
                         Please reassign them to another role before deleting.`;
-                    document.getElementById('confirmDeleteBtn').disabled = true;
+                    if (confirmBtn) confirmBtn.disabled = true;
                 } else {
                     userWarning.style.display = 'none';
-                    document.getElementById('confirmDeleteBtn').disabled = false;
+                    if (confirmBtn) confirmBtn.disabled = false;
                 }
                 
                 new bootstrap.Modal(document.getElementById('deleteConfirmModal')).show();
             } catch (error) {
-                showToast('Error checking role users', 'error');
+                showToast('Error checking role users: ' + error.message, 'error');
             }
         }
         
@@ -448,20 +491,22 @@
             
             try {
                 const response = await fetch(`${API_BASE}/roles/${roleToDelete}/`, {
-                    method: 'DELETE'
+                    method: 'DELETE',
+                    headers: { 'Accept': 'application/json' }
                 });
                 
                 const result = await response.json();
                 
                 if (response.ok && result.success) {
                     showToast(result.message || 'Role deleted successfully!');
-                    bootstrap.Modal.getInstance(document.getElementById('deleteConfirmModal')).hide();
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('deleteConfirmModal'));
+                    if (modal) modal.hide();
                     loadRoles();
                 } else {
                     showToast(result.message || 'Error deleting role', 'error');
                 }
             } catch (error) {
-                showToast('Error deleting role', 'error');
+                showToast('Error deleting role: ' + error.message, 'error');
             }
         }
         
@@ -482,12 +527,22 @@
             return div.innerHTML;
         }
         
-        document.getElementById('confirmDeleteBtn').addEventListener('click', deleteRole);
-        document.getElementById('searchInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') searchRoles();
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            const confirmBtn = document.getElementById('confirmDeleteBtn');
+            if (confirmBtn) {
+                confirmBtn.addEventListener('click', deleteRole);
+            }
+            
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                searchInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') searchRoles();
+                });
+            }
+            
+            loadRoles();
         });
-        
-        loadRoles();
     </script>
 </body>
 </html>

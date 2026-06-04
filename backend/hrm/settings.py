@@ -1,4 +1,3 @@
-# backend/hrm/settings.py
 import os
 import pymysql
 from pathlib import Path
@@ -8,8 +7,8 @@ pymysql.install_as_MySQLdb()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'your-secret-key-here'
-DEBUG = True
-ALLOWED_HOSTS = ['*']
+DEBUG = False
+ALLOWED_HOSTS = ['yourusername.pythonanywhere.com', '127.0.0.1', 'localhost']
 
 # Application definition
 INSTALLED_APPS = [

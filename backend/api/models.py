@@ -1,111 +1,92 @@
 from django.db import models
-from django.utils import timezone
+from django.contrib.auth.hashers import make_password, check_password
 
 class Department(models.Model):
-    """Department Model - Exactly as per database design"""
     dept_id = models.AutoField(primary_key=True)
-    dept_name = models.CharField(max_length=100, unique=True, verbose_name="Department Name")
-    description = models.CharField(max_length=300, blank=True, null=True, verbose_name="Description")
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Created At")
-    updated_at = models.DateTimeField(auto_now=True, verbose_name="Updated At")
-    status = models.BooleanField(default=True, verbose_name="Status")
+    dept_name = models.CharField(max_length=100, unique=True)
+    description = models.CharField(max_length=300, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    status = models.BooleanField(default=True)
     
     class Meta:
         db_table = 'department'
-        ordering = ['-created_at']
-        verbose_name = 'Department'
-        verbose_name_plural = 'Departments'
     
     def __str__(self):
         return self.dept_name
     
-    def soft_delete(self):
-        if hasattr(self, 'employees') and self.employees.filter(is_active=True).exists():
-            return False, "Department has active employees. Please reassign them first."
-        self.status = False
-        self.save()
-        return True, "Department deactivated successfully"
-    
-    def activate(self):
-        self.status = True
-        self.save()
-    
     @property
     def employee_count(self):
-        from .models import User
-        return User.objects.filter(department=self, is_active=True).count()
-    
-    @property
-    def is_active(self):
-        return self.status
+        return User.objects.filter(dept_id=self, is_active=True).count()
 
 
 class Role(models.Model):
-    """Role Model - Exactly as per database design"""
     role_id = models.AutoField(primary_key=True)
-    role_name = models.CharField(max_length=100, unique=True, verbose_name="Role Name")
-    description = models.CharField(max_length=200, blank=True, verbose_name="Description")
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Created At")
-    updated_at = models.DateTimeField(auto_now=True, verbose_name="Updated At")
-    status = models.BooleanField(default=True, verbose_name="Status")
+    role_name = models.CharField(max_length=100, unique=True)
+    description = models.CharField(max_length=200, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    status = models.BooleanField(default=True)
     
     class Meta:
         db_table = 'roles'
-        ordering = ['-created_at']
-        verbose_name = 'Role'
-        verbose_name_plural = 'Roles'
     
     def __str__(self):
         return self.role_name
     
-    def soft_delete(self):
-        from .models import User
-        if User.objects.filter(role=self, is_active=True).exists():
-            return False, "This role is assigned to active users. Please reassign them first."
-        self.status = False
-        self.save()
-        return True, "Role deactivated successfully"
-    
-    def activate(self):
-        self.status = True
-        self.save()
-    
-    @property
-    def is_active(self):
-        return self.status
-    
     @property
     def user_count(self):
-        from .models import User
-        return User.objects.filter(role=self, is_active=True).count()
+        return User.objects.filter(role_id=self, is_active=True).count()
 
 
 class User(models.Model):
-    """User Model for Employee Management"""
-    user_id = models.AutoField(primary_key=True)
-    username = models.CharField(max_length=100, unique=True)
-    email = models.EmailField(unique=True)
+    """Employee Model"""
+    employee_id = models.AutoField(primary_key=True)
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
+    username = models.CharField(max_length=100, unique=True)
     password = models.CharField(max_length=255)
-    role = models.ForeignKey(Role, on_delete=models.SET_NULL, null=True)
-    department = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True, related_name='employees')
-    phone = models.CharField(max_length=15, blank=True)
-    address = models.TextField(blank=True)
-    hire_date = models.DateField(null=True, blank=True)
-    is_active = models.BooleanField(default=True)
+    email = models.EmailField(max_length=100, unique=True)
+    mobile = models.CharField(max_length=15)
+    dept_id = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True, db_column='dept_id')
+    role_id = models.ForeignKey(Role, on_delete=models.SET_NULL, null=True, db_column='role_id')
+    reporting_manager_id = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, db_column='reporting_manager_id')
+    date_of_joining = models.DateField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    is_active = models.BooleanField(default=True)
     
     class Meta:
         db_table = 'user'
     
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
+    
+    def save(self, *args, **kwargs):
+        if self.password and not self.password.startswith('pbkdf2_sha256'):
+            self.password = make_password(self.password)
+        super().save(*args, **kwargs)
+    
+    @property
+    def full_name(self):
+        return f"{self.first_name} {self.last_name}"
+    
+    @property
+    def department_name(self):
+        return self.dept_id.dept_name if self.dept_id else None
+    
+    @property
+    def role_name(self):
+        return self.role_id.role_name if self.role_id else None
+    
+    @property
+    def reporting_manager_name(self):
+        if self.reporting_manager_id:
+            return f"{self.reporting_manager_id.first_name} {self.reporting_manager_id.last_name}"
+        return None
 
 
 class Task(models.Model):
-    """Task Model"""
     task_id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=200)
     description = models.TextField()
@@ -123,7 +104,6 @@ class Task(models.Model):
 
 
 class Leave(models.Model):
-    """Leave Model"""
     leave_id = models.AutoField(primary_key=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='leaves')
     leave_type = models.CharField(max_length=20)
@@ -139,7 +119,6 @@ class Leave(models.Model):
 
 
 class Performance(models.Model):
-    """Performance Model"""
     performance_id = models.AutoField(primary_key=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='performances')
     reviewer = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='reviewed_performances')

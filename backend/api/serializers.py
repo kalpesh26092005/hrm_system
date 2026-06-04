@@ -1,77 +1,82 @@
 from rest_framework import serializers
-from .models import Department, Role, User, Task, Leave, Performance
+from .models import Department, Role, User
 
 class DepartmentSerializer(serializers.ModelSerializer):
-    """Serializer for Department model"""
     employee_count = serializers.SerializerMethodField()
-    is_active = serializers.BooleanField(source='status', read_only=True)
+    # Format the date properly
+    created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S", read_only=True)
+    updated_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S", read_only=True)
     
     class Meta:
         model = Department
-        fields = ['dept_id', 'dept_name', 'description', 'created_at', 'updated_at', 'status', 'employee_count', 'is_active']
+        fields = ['dept_id', 'dept_name', 'description', 'created_at', 'updated_at', 'status', 'employee_count']
     
     def get_employee_count(self, obj):
         return obj.employee_count
-    
-    def validate_dept_name(self, value):
-        request = self.context.get('request')
-        if request and request.method in ['PUT', 'PATCH']:
-            dept_id = self.instance.dept_id if self.instance else None
-            if Department.objects.filter(dept_name__iexact=value).exclude(dept_id=dept_id).exists():
-                raise serializers.ValidationError("Department with this name already exists.")
-        else:
-            if Department.objects.filter(dept_name__iexact=value).exists():
-                raise serializers.ValidationError("Department with this name already exists.")
-        return value
 
 
 class RoleSerializer(serializers.ModelSerializer):
-    """Serializer for Role model with user count"""
     user_count = serializers.SerializerMethodField()
-    is_active = serializers.BooleanField(source='status', read_only=True)
+    # Format the date properly
+    created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S", read_only=True)
+    updated_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S", read_only=True)
     
     class Meta:
         model = Role
-        fields = ['role_id', 'role_name', 'description', 'created_at', 'updated_at', 'status', 'user_count', 'is_active']
+        fields = ['role_id', 'role_name', 'description', 'created_at', 'updated_at', 'status', 'user_count']
     
     def get_user_count(self, obj):
         return obj.user_count
-    
-    def validate_role_name(self, value):
-        request = self.context.get('request')
-        if request and request.method in ['PUT', 'PATCH']:
-            role_id = self.instance.role_id if self.instance else None
-            if Role.objects.filter(role_name__iexact=value).exclude(role_id=role_id).exists():
-                raise serializers.ValidationError("Role with this name already exists.")
-        else:
-            if Role.objects.filter(role_name__iexact=value).exists():
-                raise serializers.ValidationError("Role with this name already exists.")
-        return value
 
 
 class UserSerializer(serializers.ModelSerializer):
-    role_name = serializers.CharField(source='role.role_name', read_only=True)
-    department_name = serializers.CharField(source='department.dept_name', read_only=True)
+    dept_name = serializers.CharField(source='dept_id.dept_name', read_only=True)
+    role_name = serializers.CharField(source='role_id.role_name', read_only=True)
+    full_name = serializers.SerializerMethodField()
+    reporting_manager_name = serializers.SerializerMethodField()
+    # Format the date properly
+    created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S", read_only=True)
+    updated_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S", read_only=True)
+    date_of_joining = serializers.DateField(format="%Y-%m-%d", required=False, allow_null=True)
     
     class Meta:
         model = User
-        fields = '__all__'
+        fields = ['employee_id', 'first_name', 'last_name', 'username', 'email', 'mobile',
+                  'dept_id', 'dept_name', 'role_id', 'role_name', 'reporting_manager_id',
+                  'reporting_manager_name', 'date_of_joining', 'created_at', 'updated_at', 
+                  'is_active', 'full_name']
         extra_kwargs = {'password': {'write_only': True}}
+    
+    def get_full_name(self, obj):
+        return obj.full_name
+    
+    def get_reporting_manager_name(self, obj):
+        if obj.reporting_manager_id:
+            return f"{obj.reporting_manager_id.first_name} {obj.reporting_manager_id.last_name}"
+        return None
+    
+    def create(self, validated_data):
+        password = validated_data.pop('password', None)
+        user = User(**validated_data)
+        if password:
+            user.password = password
+        user.save()
+        return user
+    
+    def update(self, instance, validated_data):
+        password = validated_data.pop('password', None)
+        if password:
+            instance.password = password
+        return super().update(instance, validated_data)
 
 
-class TaskSerializer(serializers.ModelSerializer):
+class UserListSerializer(serializers.ModelSerializer):
+    dept_name = serializers.CharField(source='dept_id.dept_name', read_only=True)
+    role_name = serializers.CharField(source='role_id.role_name', read_only=True)
+    reporting_manager = serializers.CharField(source='reporting_manager_id.full_name', read_only=True)
+    date_of_joining = serializers.DateField(format="%Y-%m-%d", required=False, allow_null=True)
+    
     class Meta:
-        model = Task
-        fields = '__all__'
-
-
-class LeaveSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Leave
-        fields = '__all__'
-
-
-class PerformanceSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Performance
-        fields = '__all__'
+        model = User
+        fields = ['employee_id', 'first_name', 'last_name', 'username', 'email', 'mobile',
+                  'dept_name', 'role_name', 'reporting_manager', 'date_of_joining', 'is_active']
