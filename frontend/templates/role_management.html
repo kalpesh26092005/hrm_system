@@ -32,6 +32,9 @@
             background: linear-gradient(180deg, #4e73df 0%, #224abe 100%);
             border: none;
             color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.35rem;
+            font-weight: 500;
         }
         .btn-gradient:hover {
             background: linear-gradient(180deg, #224abe 0%, #4e73df 100%);
@@ -83,7 +86,7 @@
                     <small class="text-white-50">Role Management</small>
                 </div>
                 <nav class="nav flex-column">
-                    <a class="nav-link" href="/">
+                    <a class="nav-link" href="/dashboard/">
                         <i class="bi bi-speedometer2"></i> Dashboard
                     </a>
                     <a class="nav-link" href="/department-management/">
@@ -108,11 +111,9 @@
             <div class="col">
                 <div class="topbar d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Role Management</h5>
-                    <div>
-                        <button class="btn btn-gradient" data-bs-toggle="modal" data-bs-target="#addRoleModal">
-                            <i class="bi bi-plus-circle"></i> Create Role
-                        </button>
-                    </div>
+                    <button class="btn btn-gradient" data-bs-toggle="modal" data-bs-target="#addRoleModal">
+                        <i class="bi bi-plus-circle"></i> Create Role
+                    </button>
                 </div>
                 
                 <div class="p-4">
@@ -181,13 +182,11 @@
                     <form id="addRoleForm">
                         <div class="mb-3">
                             <label class="form-label">Role Name <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="roleName" required 
-                                   placeholder="e.g., Admin, Manager, Team Leader, Employee">
+                            <input type="text" class="form-control" id="roleName" required placeholder="e.g., Admin, Manager, Team Leader, Employee">
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Description</label>
-                            <textarea class="form-control" id="roleDescription" rows="3" 
-                                      placeholder="Describe the responsibilities of this role"></textarea>
+                            <textarea class="form-control" id="roleDescription" rows="3" placeholder="Describe the responsibilities of this role"></textarea>
                         </div>
                     </form>
                 </div>
@@ -250,7 +249,6 @@
         </div>
     </div>
     
-    <!-- Toast Container -->
     <div class="toast-container"></div>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -276,37 +274,27 @@
             
             toastContainer.insertAdjacentHTML('beforeend', toastHtml);
             const toastElement = document.getElementById(toastId);
-            const toast = new bootstrap.Toast(toastElement);
-            toast.show();
-            
-            toastElement.addEventListener('hidden.bs.toast', () => toastElement.remove());
+            if (toastElement) {
+                const toast = new bootstrap.Toast(toastElement);
+                toast.show();
+                toastElement.addEventListener('hidden.bs.toast', () => toastElement.remove());
+            }
         }
         
         async function loadRoles() {
             try {
                 let url = `${API_BASE}/roles/`;
                 const params = new URLSearchParams();
-                
-                if (currentSearchTerm) {
-                    params.append('search', currentSearchTerm);
-                }
-                if (currentFilter !== 'all') {
-                    params.append('status', currentFilter === 'active' ? 'active' : 'inactive');
-                }
-                
-                if (params.toString()) {
-                    url += '?' + params.toString();
-                }
+                if (currentSearchTerm) params.append('search', currentSearchTerm);
+                if (currentFilter !== 'all') params.append('status', currentFilter === 'active' ? 'active' : 'inactive');
+                if (params.toString()) url += '?' + params.toString();
                 
                 const response = await fetch(url);
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 
                 const roles = await response.json();
-                
                 const tbody = document.getElementById('rolesTableBody');
+                
                 if (roles.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="7" class="text-center">No roles found</td></tr>';
                 } else {
@@ -317,18 +305,10 @@
                             <td>${escapeHtml(role.description) || '-'}</td>
                             <td><span class="badge bg-info">${role.user_count || 0}</span></td>
                             <td>${new Date(role.created_at).toLocaleDateString()}</td>
+                            <td>${role.status ? '<span class="status-badge-active">Active</span>' : '<span class="status-badge-inactive">Inactive</span>'}</td>
                             <td>
-                                ${role.status ? 
-                                    '<span class="status-badge-active">Active</span>' : 
-                                    '<span class="status-badge-inactive">Inactive</span>'}
-                            </td>
-                            <td>
-                                <button class="btn btn-sm btn-warning me-1" onclick="openEditModal(${role.role_id})" title="Edit">
-                                    <i class="bi bi-pencil"></i>
-                                </button>
-                                <button class="btn btn-sm btn-danger" onclick="confirmDelete(${role.role_id})" title="Delete">
-                                    <i class="bi bi-trash"></i>
-                                </button>
+                                <button class="btn btn-sm btn-warning me-1" onclick="openEditModal(${role.role_id})" title="Edit"><i class="bi bi-pencil"></i></button>
+                                <button class="btn btn-sm btn-danger" onclick="confirmDelete(${role.role_id})" title="Delete"><i class="bi bi-trash"></i></button>
                             </td>
                         </tr>
                     `).join('');
@@ -340,71 +320,54 @@
         }
         
         async function addRole() {
-    const name = document.getElementById('roleName').value.trim();
-    const description = document.getElementById('roleDescription').value.trim();
-    
-    if (!name) {
-        showToast('Please enter role name', 'error');
-        return;
-    }
-    
-    try {
-        const response = await fetch(`${API_BASE}/roles/`, {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({ 
-                role_name: name, 
-                description: description,
-                status: true  // Add status explicitly
-            })
-        });
-        
-        // Check if response is ok
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('Server response:', errorText);
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            const name = document.getElementById('roleName').value.trim();
+            const description = document.getElementById('roleDescription').value.trim();
+            
+            if (!name) {
+                showToast('Please enter role name', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/roles/`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    body: JSON.stringify({ role_name: name, description: description, status: true })
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Server response:', errorText);
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                
+                if (response.ok && (result.success === true || result.role_id)) {
+                    showToast('Role created successfully!');
+                    document.getElementById('addRoleForm').reset();
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('addRoleModal'));
+                    if (modal) modal.hide();
+                    loadRoles();
+                    setTimeout(() => { window.location.href = '/dashboard/'; }, 1500);
+                } else {
+                    let errorMsg = 'Error creating role';
+                    if (result.message) errorMsg = result.message;
+                    if (result.error) errorMsg = result.error;
+                    showToast(errorMsg, 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('Error creating role: ' + error.message, 'error');
+            }
         }
-        
-        const result = await response.json();
-        
-        // Check if we got a success response
-        if (response.ok && (result.success === true || result.role_id)) {
-            showToast('Role created successfully!');
-            document.getElementById('addRoleForm').reset();
-            const modal = bootstrap.Modal.getInstance(document.getElementById('addRoleModal'));
-            if (modal) modal.hide();
-            loadRoles();
-            setTimeout(() => {
-                window.location.href = '/';
-            }, 1500);
-        } else {
-            // Handle validation errors
-            let errorMsg = 'Error creating role';
-            if (result.message) errorMsg = result.message;
-            if (result.error) errorMsg = result.error;
-            if (result.role_name) errorMsg = result.role_name.join(', ');
-            showToast(errorMsg, 'error');
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        showToast('Error creating role: ' + error.message, 'error');
-    }
-}
         
         async function openEditModal(id) {
             try {
                 const response = await fetch(`${API_BASE}/roles/${id}/`);
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 
                 const role = await response.json();
-                
                 document.getElementById('editRoleId').value = role.role_id;
                 document.getElementById('editRoleName').value = role.role_name;
                 document.getElementById('editRoleDescription').value = role.description || '';
@@ -428,10 +391,7 @@
             try {
                 const response = await fetch(`${API_BASE}/roles/${id}/`, {
                     method: 'PUT',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
                     body: JSON.stringify({ role_name: name, description: description })
                 });
                 
@@ -442,12 +402,9 @@
                     const modal = bootstrap.Modal.getInstance(document.getElementById('editRoleModal'));
                     if (modal) modal.hide();
                     loadRoles();
-                    setTimeout(() => {
-                        window.location.href = '/';
-                    }, 1500);
+                    setTimeout(() => { window.location.href = '/dashboard/'; }, 1500);
                 } else {
-                    const errorMsg = result.message || 'Error updating role';
-                    showToast(typeof errorMsg === 'object' ? JSON.stringify(errorMsg) : errorMsg, 'error');
+                    showToast(result.message || 'Error updating role', 'error');
                 }
             } catch (error) {
                 showToast('Error updating role: ' + error.message, 'error');
@@ -456,24 +413,18 @@
         
         async function confirmDelete(id) {
             roleToDelete = id;
-            
             try {
                 const response = await fetch(`${API_BASE}/roles/${id}/check_users/`);
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 
                 const data = await response.json();
-                
                 const userWarning = document.getElementById('userWarning');
                 const userCountSpan = document.getElementById('userCount');
                 const confirmBtn = document.getElementById('confirmDeleteBtn');
                 
                 if (data.user_count > 0) {
                     userWarning.style.display = 'block';
-                    userCountSpan.innerHTML = `<strong>Warning:</strong> This role is assigned to ${data.user_count} active user(s). 
-                        Please reassign them to another role before deleting.`;
+                    userCountSpan.innerHTML = `<strong>Warning:</strong> This role is assigned to ${data.user_count} active user(s). Please reassign them first.`;
                     if (confirmBtn) confirmBtn.disabled = true;
                 } else {
                     userWarning.style.display = 'none';
@@ -527,12 +478,9 @@
             return div.innerHTML;
         }
         
-        // Event listeners
         document.addEventListener('DOMContentLoaded', () => {
             const confirmBtn = document.getElementById('confirmDeleteBtn');
-            if (confirmBtn) {
-                confirmBtn.addEventListener('click', deleteRole);
-            }
+            if (confirmBtn) confirmBtn.addEventListener('click', deleteRole);
             
             const searchInput = document.getElementById('searchInput');
             if (searchInput) {

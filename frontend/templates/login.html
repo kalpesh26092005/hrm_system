@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - VIBGYOR HRM</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            font-family: 'Nunito', 'Segoe UI', sans-serif;
+        }
+        .login-card {
+            border-radius: 1rem;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            border: none;
+        }
+        .login-card .card-header {
+            background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+            border-radius: 1rem 1rem 0 0;
+            padding: 1.5rem;
+            text-align: center;
+        }
+        .login-card .card-header h3 {
+            color: white;
+            margin: 0;
+        }
+        .login-card .card-header p {
+            color: rgba(255,255,255,0.8);
+            margin: 0;
+        }
+        .login-card .card-body {
+            padding: 2rem;
+        }
+        .btn-login {
+            background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+            border: none;
+            padding: 0.75rem;
+            font-weight: 600;
+        }
+        .btn-login:hover {
+            background: linear-gradient(135deg, #224abe 0%, #4e73df 100%);
+        }
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1050;
+        }
+        .input-group-text {
+            background-color: #f8f9fc;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-5">
+                <div class="card login-card">
+                    <div class="card-header">
+                        <h3><i class="bi bi-building"></i> VIBGYOR HRM</h3>
+                        <p>Sign in to your account</p>
+                    </div>
+                    <div class="card-body">
+                        <form id="loginForm">
+                            <div class="mb-3">
+                                <label class="form-label">Username</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-person"></i></span>
+                                    <input type="text" class="form-control" id="username" required placeholder="Enter your username">
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Password</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                                    <input type="password" class="form-control" id="password" required placeholder="Enter your password">
+                                    <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="mb-3 form-check">
+                                <input type="checkbox" class="form-check-input" id="rememberMe">
+                                <label class="form-check-label" for="rememberMe">Remember me</label>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100 btn-login">
+                                <i class="bi bi-box-arrow-in-right"></i> Sign In
+                            </button>
+                            <hr>
+                            <div class="text-center">
+                                <a href="/forgot-password/" class="text-decoration-none">Forgot Password?</a>
+                            </div>
+                        </form>
+                        <div class="text-center mt-3">
+                            Don't have an account? <a href="/signup/" class="text-decoration-none">Sign Up</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="toast-container"></div>
+    
+    <script>
+        function showToast(message, type = 'success') {
+            const toastContainer = document.querySelector('.toast-container');
+            const toastId = 'toast-' + Date.now();
+            const bgColor = type === 'success' ? 'bg-success' : (type === 'error' ? 'bg-danger' : 'bg-warning');
+            
+            const toastHtml = `
+                <div id="${toastId}" class="toast align-items-center text-white ${bgColor} border-0 mb-2" role="alert" data-bs-autohide="true" data-bs-delay="3000">
+                    <div class="d-flex">
+                        <div class="toast-body">${message}</div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                    </div>
+                </div>
+            `;
+            
+            toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+            const toastElement = document.getElementById(toastId);
+            if (toastElement) {
+                const toast = new bootstrap.Toast(toastElement);
+                toast.show();
+                toastElement.addEventListener('hidden.bs.toast', () => toastElement.remove());
+            }
+        }
+        
+        // Toggle password visibility
+        document.getElementById('togglePassword').addEventListener('click', function() {
+            const passwordInput = document.getElementById('password');
+            const icon = this.querySelector('i');
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                icon.classList.remove('bi-eye');
+                icon.classList.add('bi-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                icon.classList.remove('bi-eye-slash');
+                icon.classList.add('bi-eye');
+            }
+        });
+        
+        // Handle login form submission
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            
+            if (!username || !password) {
+                showToast('Please enter username and password', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/auth/login/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    showToast(result.message, 'success');
+                    setTimeout(() => {
+                        window.location.href = '/dashboard/';
+                    }, 1000);
+                } else {
+                    const errorMsg = result.message || 'Invalid credentials';
+                    showToast(typeof errorMsg === 'object' ? JSON.stringify(errorMsg) : errorMsg, 'error');
+                }
+            } catch (error) {
+                showToast('Error connecting to server', 'error');
+            }
+        });
+        window.onload = function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('logged_out') === 'true') {
+        showToast('You have been logged out successfully', 'success');
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, newUrl);
+    }
+}
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

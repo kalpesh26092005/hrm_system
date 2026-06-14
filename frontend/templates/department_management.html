@@ -33,6 +33,9 @@
             background: linear-gradient(180deg, #4e73df 0%, #224abe 100%);
             border: none;
             color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.35rem;
+            font-weight: 500;
         }
         .btn-gradient:hover {
             background: linear-gradient(180deg, #224abe 0%, #4e73df 100%);
@@ -84,7 +87,7 @@
                     <small class="text-white-50">Department Management</small>
                 </div>
                 <nav class="nav flex-column">
-                    <a class="nav-link" href="/">
+                    <a class="nav-link" href="/dashboard/">
                         <i class="bi bi-speedometer2"></i> Dashboard
                     </a>
                     <a class="nav-link active" href="/department-management/">
@@ -112,11 +115,9 @@
             <div class="col">
                 <div class="topbar d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Department Management</h5>
-                    <div>
-                        <button class="btn btn-gradient" data-bs-toggle="modal" data-bs-target="#addDepartmentModal">
-                            <i class="bi bi-plus-circle"></i> Add Department
-                        </button>
-                    </div>
+                    <button class="btn btn-gradient" data-bs-toggle="modal" data-bs-target="#addDepartmentModal">
+                        <i class="bi bi-plus-circle"></i> Add Department
+                    </button>
                 </div>
                 
                 <div class="p-4">
@@ -252,7 +253,6 @@
         </div>
     </div>
     
-    <!-- Toast Container -->
     <div class="toast-container"></div>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -262,7 +262,6 @@
         let currentSearchTerm = '';
         let departmentToDelete = null;
         
-        // Show toast message
         function showToast(message, type = 'success') {
             const toastContainer = document.querySelector('.toast-container');
             const toastId = 'toast-' + Date.now();
@@ -279,28 +278,20 @@
             
             toastContainer.insertAdjacentHTML('beforeend', toastHtml);
             const toastElement = document.getElementById(toastId);
-            const toast = new bootstrap.Toast(toastElement);
-            toast.show();
-            
-            toastElement.addEventListener('hidden.bs.toast', () => toastElement.remove());
+            if (toastElement) {
+                const toast = new bootstrap.Toast(toastElement);
+                toast.show();
+                toastElement.addEventListener('hidden.bs.toast', () => toastElement.remove());
+            }
         }
         
-        // Load departments
         async function loadDepartments() {
             try {
                 let url = `${API_BASE}/departments/`;
                 const params = new URLSearchParams();
-                
-                if (currentSearchTerm) {
-                    params.append('search', currentSearchTerm);
-                }
-                if (currentFilter !== 'all') {
-                    params.append('status', currentFilter === 'active' ? 'true' : 'false');
-                }
-                
-                if (params.toString()) {
-                    url += '?' + params.toString();
-                }
+                if (currentSearchTerm) params.append('search', currentSearchTerm);
+                if (currentFilter !== 'all') params.append('status', currentFilter === 'active' ? 'true' : 'false');
+                if (params.toString()) url += '?' + params.toString();
                 
                 const response = await fetch(url);
                 const departments = await response.json();
@@ -316,18 +307,10 @@
                             <td>${escapeHtml(dept.description) || '-'}</td>
                             <td><span class="badge bg-info">${dept.employee_count || 0}</span></td>
                             <td>${new Date(dept.created_at).toLocaleDateString()}</td>
+                            <td>${dept.status ? '<span class="status-badge-active">Active</span>' : '<span class="status-badge-inactive">Inactive</span>'}</td>
                             <td>
-                                ${dept.status ? 
-                                    '<span class="status-badge-active">Active</span>' : 
-                                    '<span class="status-badge-inactive">Inactive</span>'}
-                            </td>
-                            <td>
-                                <button class="btn btn-sm btn-warning me-1" onclick="openEditModal(${dept.dept_id})" title="Edit">
-                                    <i class="bi bi-pencil"></i>
-                                </button>
-                                <button class="btn btn-sm btn-danger" onclick="confirmDelete(${dept.dept_id})" title="Delete">
-                                    <i class="bi bi-trash"></i>
-                                </button>
+                                <button class="btn btn-sm btn-warning me-1" onclick="openEditModal(${dept.dept_id})" title="Edit"><i class="bi bi-pencil"></i></button>
+                                <button class="btn btn-sm btn-danger" onclick="confirmDelete(${dept.dept_id})" title="Delete"><i class="bi bi-trash"></i></button>
                             </td>
                         </tr>
                     `).join('');
@@ -338,7 +321,6 @@
             }
         }
         
-        // Add department
         async function addDepartment() {
             const name = document.getElementById('deptName').value.trim();
             const description = document.getElementById('deptDescription').value.trim();
@@ -362,10 +344,7 @@
                     document.getElementById('addDepartmentForm').reset();
                     bootstrap.Modal.getInstance(document.getElementById('addDepartmentModal')).hide();
                     loadDepartments();
-                    // Redirect to dashboard as per requirement
-                    setTimeout(() => {
-                        window.location.href = '/';
-                    }, 1500);
+                    setTimeout(() => { window.location.href = '/dashboard/'; }, 1500);
                 } else {
                     showToast(result.message || result.error || 'Error adding department', 'error');
                 }
@@ -374,7 +353,6 @@
             }
         }
         
-        // Open edit modal
         async function openEditModal(id) {
             try {
                 const response = await fetch(`${API_BASE}/departments/${id}/`);
@@ -390,7 +368,6 @@
             }
         }
         
-        // Update department
         async function updateDepartment() {
             const id = document.getElementById('editDeptId').value;
             const name = document.getElementById('editDeptName').value.trim();
@@ -414,10 +391,7 @@
                     showToast(result.message || 'Department updated successfully!');
                     bootstrap.Modal.getInstance(document.getElementById('editDepartmentModal')).hide();
                     loadDepartments();
-                    // Redirect to dashboard as per requirement
-                    setTimeout(() => {
-                        window.location.href = '/';
-                    }, 1500);
+                    setTimeout(() => { window.location.href = '/dashboard/'; }, 1500);
                 } else {
                     showToast(result.message || 'Error updating department', 'error');
                 }
@@ -426,23 +400,18 @@
             }
         }
         
-        // Confirm delete (with warning message)
         async function confirmDelete(id) {
             departmentToDelete = id;
-            
             try {
-                // Check employees in department
                 const response = await fetch(`${API_BASE}/departments/${id}/check_employees/`);
                 const data = await response.json();
                 
-                const modalBody = document.getElementById('deleteModalBody');
                 const employeeWarning = document.getElementById('employeeWarning');
                 const employeeCountSpan = document.getElementById('employeeCount');
                 
                 if (data.employee_count > 0) {
                     employeeWarning.style.display = 'block';
-                    employeeCountSpan.innerHTML = `<strong>Warning:</strong> This department has ${data.employee_count} active employee(s). 
-                        Please reassign them to another department before deleting.`;
+                    employeeCountSpan.innerHTML = `<strong>Warning:</strong> This department has ${data.employee_count} active employee(s). Please reassign them first.`;
                     document.getElementById('confirmDeleteBtn').disabled = true;
                 } else {
                     employeeWarning.style.display = 'none';
@@ -455,15 +424,11 @@
             }
         }
         
-        // Delete department
         async function deleteDepartment() {
             if (!departmentToDelete) return;
             
             try {
-                const response = await fetch(`${API_BASE}/departments/${departmentToDelete}/`, {
-                    method: 'DELETE'
-                });
-                
+                const response = await fetch(`${API_BASE}/departments/${departmentToDelete}/`, { method: 'DELETE' });
                 const result = await response.json();
                 
                 if (response.ok && result.success) {
@@ -478,13 +443,11 @@
             }
         }
         
-        // Search departments
         function searchDepartments() {
             currentSearchTerm = document.getElementById('searchInput').value;
             loadDepartments();
         }
         
-        // Filter departments
         function filterDepartments(filter) {
             currentFilter = filter;
             loadDepartments();

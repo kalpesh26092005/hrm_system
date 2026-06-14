@@ -115,3 +115,36 @@ REST_FRAMEWORK = {
 # CORS settings
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
+
+# ========== AUTHENTICATION SETTINGS ==========
+
+# Session settings
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+SESSION_COOKIE_AGE = 86400  # 24 hours in seconds
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SECURE = False  # Set to True in production with HTTPS
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+
+# Authentication backends
+AUTHENTICATION_BACKENDS = [
+    'api.authentication.CustomAuthBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
+
+# Login/Logout URLs
+LOGIN_URL = '/login/'
+LOGIN_REDIRECT_URL = '/dashboard/'
+LOGOUT_REDIRECT_URL = '/login/'
+
+# ========== EMAIL CONFIGURATION ==========
+
+# For development - prints OTP to console (USE THIS FOR NOW)
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+# For production with Gmail (UNCOMMENT WHEN READY)
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'kalpeshdukhande1@gmail.com'
+EMAIL_HOST_PASSWORD = 'hzvs jqub amur uzyi'  

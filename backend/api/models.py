@@ -1,5 +1,9 @@
 from django.db import models
 from django.contrib.auth.hashers import make_password, check_password
+from django.utils import timezone
+import secrets
+import string
+
 
 class Department(models.Model):
     dept_id = models.AutoField(primary_key=True)
@@ -67,6 +71,9 @@ class User(models.Model):
             self.password = make_password(self.password)
         super().save(*args, **kwargs)
     
+    def check_password(self, raw_password):
+        return check_password(raw_password, self.password)
+    
     @property
     def full_name(self):
         return f"{self.first_name} {self.last_name}"
@@ -131,3 +138,49 @@ class Performance(models.Model):
     
     class Meta:
         db_table = 'performance'
+
+
+# ========== AUTHENTICATION MODELS ==========
+
+class PasswordResetOTP(models.Model):
+    """Model to store OTP for password reset"""
+    otp_id = models.AutoField(primary_key=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='password_resets')
+    email = models.EmailField(max_length=100)
+    otp = models.CharField(max_length=6)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    is_used = models.BooleanField(default=False)
+    
+    class Meta:
+        db_table = 'password_reset_otp'
+    
+    def __str__(self):
+        return f"OTP for {self.email} - {self.otp}"
+    
+    def is_valid(self):
+        """Check if OTP is still valid (not expired and not used)"""
+        return not self.is_used and timezone.now() < self.expires_at
+    
+    @staticmethod
+    def generate_otp():
+        """Generate a 6-digit OTP"""
+        return ''.join(secrets.choice(string.digits) for _ in range(6))
+
+
+class UserSession(models.Model):
+    """Track user sessions"""
+    session_id = models.AutoField(primary_key=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sessions')
+    session_key = models.CharField(max_length=255, unique=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    is_active = models.BooleanField(default=True)
+    
+    class Meta:
+        db_table = 'user_sessions'
+    
+    def __str__(self):
+        return f"Session for {self.user.username} - {self.created_at}"
