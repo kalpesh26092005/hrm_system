@@ -94,20 +94,102 @@ class User(models.Model):
 
 
 class Task(models.Model):
+    """Task Model - Exactly as per database design"""
     task_id = models.AutoField(primary_key=True)
-    title = models.CharField(max_length=200)
-    description = models.TextField()
-    assigned_to = models.ForeignKey(User, on_delete=models.CASCADE, related_name='assigned_tasks')
-    assigned_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='created_tasks')
-    department = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True)
-    status = models.CharField(max_length=20, default='pending')
-    priority = models.CharField(max_length=20, default='medium')
-    due_date = models.DateField()
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    task_title = models.CharField(max_length=100, verbose_name="Task Title")
+    task_description = models.CharField(max_length=300, blank=True, null=True, verbose_name="Task Description")
+    task_priority = models.CharField(
+        max_length=20,
+        choices=[('High', 'High'), ('Medium', 'Medium'), ('Low', 'Low')],
+        default='Medium',
+        verbose_name="Task Priority"
+    )
+    start_date = models.DateField(verbose_name="Start Date")
+    end_date = models.DateField(verbose_name="End Date")
+    task_type = models.CharField(
+        max_length=20,
+        choices=[('Individual', 'Individual'), ('Team', 'Team')],
+        default='Individual',
+        verbose_name="Task Type"
+    )
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Created At")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Updated At")
     
     class Meta:
         db_table = 'task'
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return self.task_title
+    
+    @property
+    def status(self):
+        """Get current task status based on assignments"""
+        assignments = self.task_assignments.all()
+        if not assignments.exists():
+            return 'Pending'
+        
+        # If any assignment is in progress, task is in progress
+        if assignments.filter(status='In Progress').exists():
+            return 'In Progress'
+        
+        # If all assignments are completed, task is completed
+        if assignments.filter(status='Completed').count() == assignments.count():
+            return 'Completed'
+        
+        return 'Pending'
+    
+    @property
+    def progress(self):
+        """Calculate task progress percentage"""
+        assignments = self.task_assignments.all()
+        if not assignments.exists():
+            return 0
+        completed = assignments.filter(status='Completed').count()
+        return int((completed / assignments.count()) * 100)
+    
+    @property
+    def assigned_employees_list(self):
+        """Get list of assigned employees"""
+        return [assignment.employee for assignment in self.task_assignments.all()]
+
+
+class TaskAssignment(models.Model):
+    """Task Assignment Model - Exactly as per database design"""
+    assignment_id = models.AutoField(primary_key=True)
+    task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='task_assignments')
+    employee = models.ForeignKey(User, on_delete=models.CASCADE, related_name='assigned_tasks')
+    assigned_by = models.ForeignKey(
+        User, 
+        on_delete=models.CASCADE, 
+        related_name='assigned_by_tasks'
+    )
+    assigned_date = models.DateTimeField(auto_now_add=True, verbose_name="Assigned Date")
+    status = models.CharField(
+        max_length=20,
+        choices=[
+            ('Pending', 'Pending'), 
+            ('In Progress', 'In Progress'), 
+            ('Completed', 'Completed')
+        ],
+        default='Pending',
+        verbose_name="Status"
+    )
+    completed_at = models.DateTimeField(null=True, blank=True, verbose_name="Completed At")
+    
+    class Meta:
+        db_table = 'task_assignment'
+        ordering = ['-assigned_date']
+        unique_together = ['task', 'employee']
+    
+    def __str__(self):
+        return f"{self.task.task_title} - {self.employee.full_name}"
+    
+    def mark_completed(self):
+        """Mark assignment as completed"""
+        self.status = 'Completed'
+        self.completed_at = timezone.now()
+        self.save()
 
 
 class Leave(models.Model):

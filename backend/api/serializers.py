@@ -1,10 +1,9 @@
 from rest_framework import serializers
-from .models import Department, Role, User
+from .models import Department, Role, User, Task, TaskAssignment
 from django.contrib.auth.hashers import check_password
 
 class DepartmentSerializer(serializers.ModelSerializer):
     employee_count = serializers.SerializerMethodField()
-    # Format the date properly
     created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S", read_only=True)
     updated_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S", read_only=True)
     
@@ -18,7 +17,6 @@ class DepartmentSerializer(serializers.ModelSerializer):
 
 class RoleSerializer(serializers.ModelSerializer):
     user_count = serializers.SerializerMethodField()
-    # Format the date properly
     created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S", read_only=True)
     updated_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S", read_only=True)
     
@@ -35,7 +33,6 @@ class UserSerializer(serializers.ModelSerializer):
     role_name = serializers.CharField(source='role_id.role_name', read_only=True)
     full_name = serializers.SerializerMethodField()
     reporting_manager_name = serializers.SerializerMethodField()
-    # Format the date properly
     created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S", read_only=True)
     updated_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S", read_only=True)
     date_of_joining = serializers.DateField(format="%Y-%m-%d", required=False, allow_null=True)
@@ -81,7 +78,114 @@ class UserListSerializer(serializers.ModelSerializer):
         model = User
         fields = ['employee_id', 'first_name', 'last_name', 'username', 'email', 'mobile',
                   'dept_name', 'role_name', 'reporting_manager', 'date_of_joining', 'is_active']
+
+
+# ========== TASK SERIALIZERS ==========
+
+class TaskAssignmentSerializer(serializers.ModelSerializer):
+    """Serializer for Task Assignment"""
+    employee_name = serializers.CharField(source='employee.full_name', read_only=True)
+    assigned_by_name = serializers.CharField(source='assigned_by.full_name', read_only=True)
+    
+    class Meta:
+        model = TaskAssignment
+        fields = [
+            'assignment_id', 'task', 'employee', 'employee_name',
+            'assigned_by', 'assigned_by_name', 'assigned_date',
+            'status', 'completed_at'
+        ]
+
+
+class TaskSerializer(serializers.ModelSerializer):
+    """Serializer for Task model"""
+    status = serializers.CharField(read_only=True)
+    progress = serializers.IntegerField(read_only=True)
+    assigned_employees = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Task
+        fields = [
+            'task_id', 'task_title', 'task_description', 'task_priority',
+            'start_date', 'end_date', 'task_type', 'created_at', 'updated_at',
+            'status', 'progress', 'assigned_employees'
+        ]
+    
+    def get_assigned_employees(self, obj):
+        assignments = obj.task_assignments.all()
+        return [
+            {
+                'employee_id': assignment.employee.employee_id,
+                'full_name': assignment.employee.full_name,
+                'status': assignment.status,
+                'completed_at': assignment.completed_at
+            }
+            for assignment in assignments
+        ]
+    
+    def create(self, validated_data):
+        return Task.objects.create(**validated_data)
+
+
+class TaskCreateSerializer(serializers.Serializer):
+    """Serializer for creating task with assignments"""
+    task_title = serializers.CharField(max_length=100)
+    task_description = serializers.CharField(max_length=300, required=False, allow_blank=True)
+    task_priority = serializers.ChoiceField(choices=['High', 'Medium', 'Low'])
+    start_date = serializers.DateField()
+    end_date = serializers.DateField()
+    task_type = serializers.ChoiceField(choices=['Individual', 'Team'])
+    assigned_to = serializers.ListField(
+        child=serializers.IntegerField(),
+        required=True,
+        help_text="List of employee IDs to assign the task to"
+    )
+    
+    def validate_assigned_to(self, value):
+        if not value:
+            raise serializers.ValidationError("At least one employee must be assigned")
         
+        from .models import User
+        existing_users = User.objects.filter(employee_id__in=value, is_active=True)
+        if existing_users.count() != len(value):
+            raise serializers.ValidationError("Some employees do not exist or are inactive")
+        
+        return value
+    
+    def validate(self, data):
+        start_date = data.get('start_date')
+        end_date = data.get('end_date')
+
+        if start_date and end_date and end_date < start_date:
+            raise serializers.ValidationError({
+                'end_date': 'End date must be after start date'
+            })
+
+        return data
+
+
+class TaskUpdateSerializer(serializers.ModelSerializer):
+    """Serializer for updating task"""
+    class Meta:
+        model = Task
+        fields = [
+            'task_title', 'task_description', 'task_priority',
+            'start_date', 'end_date', 'task_type'
+        ]
+
+    def validate(self, data):
+        start_date = data.get('start_date', getattr(self.instance, 'start_date', None))
+        end_date = data.get('end_date', getattr(self.instance, 'end_date', None))
+
+        if start_date and end_date and end_date < start_date:
+            raise serializers.ValidationError({
+                'end_date': 'End date must be after start date'
+            })
+
+        return data
+
+
+# ========== AUTHENTICATION SERIALIZERS ==========
+
 class LoginSerializer(serializers.Serializer):
     """Serializer for login request"""
     username = serializers.CharField(max_length=100)
@@ -177,6 +281,7 @@ class ChangePasswordSerializer(serializers.Serializer):
         
         return data        
 
+
 class SignUpSerializer(serializers.Serializer):
     """Serializer for user registration/sign-up"""
     first_name = serializers.CharField(max_length=100)
@@ -209,4 +314,4 @@ class SignUpSerializer(serializers.Serializer):
         if len(data['password']) < 6:
             raise serializers.ValidationError("Password must be at least 6 characters")
         
-        return data    
+        return data
